@@ -1,12 +1,16 @@
 {
   "name": "appointment-booking",
   "private": true,
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "node-fetch": "^3.3.2"
+  },
   "scripts": {
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "node init && cd backend && npm run dev",
+    "dev:frontend": "node init && cd frontend && npm run dev",
     "install:all": "cd backend && npm install && cd ../frontend && npm install",
     "db:push": "cd backend && npx prisma db push",
     "db:seed": "cd backend && npm run db:seed",
-    "build": "cd backend && npm run build && cd ../frontend && npm run build"
+    "build": "node init && cd backend && npm run build && cd ../frontend && npm run build"
   }
 }
