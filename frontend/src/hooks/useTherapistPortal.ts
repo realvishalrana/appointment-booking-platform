@@ -6,6 +6,7 @@ import {
   findDuplicateRowIndices,
   validateScheduleWindows,
 } from "../utils/scheduleValidation";
+import { normalizeScheduleTime } from "../utils/format";
 
 type Tab = "appointments" | "schedule";
 
@@ -111,7 +112,13 @@ export function useTherapistPortal() {
 
     setSaving(true);
     try {
-      const res = await api.updateTherapistSchedule(schedule);
+      const res = await api.updateTherapistSchedule(
+        schedule.map(({ dayOfWeek, startTime, endTime }) => ({
+          dayOfWeek,
+          startTime: normalizeScheduleTime(startTime),
+          endTime: normalizeScheduleTime(endTime),
+        }))
+      );
       setSchedule(res.schedule);
       toast.success("Schedule updated. Existing bookings are unaffected.");
     } catch (err) {

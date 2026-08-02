@@ -21,6 +21,22 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+/** Normalize browser time input to HH:MM:SS for the API */
+export function normalizeScheduleTime(value: string): string {
+  const parts = value.split(":");
+  const h = parts[0]?.padStart(2, "0") ?? "00";
+  const m = parts[1]?.padStart(2, "0") ?? "00";
+  const s = (parts[2] ?? "00").padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
+/** Display HH:MM:SS (or corrupted HH:MM:SS:SS) in <input type="time"> */
+export function scheduleTimeToInputValue(time: string): string {
+  const parts = time.split(":");
+  if (parts.length < 2) return "00:00";
+  return `${parts[0]}:${parts[1]}`;
+}
+
 export function getDateRange(days: number): { from: string; to: string } {
   const from = new Date();
   const to = new Date();

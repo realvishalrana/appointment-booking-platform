@@ -1,5 +1,9 @@
 import { ScheduleWindow } from "../../types";
-import { DAY_NAMES } from "../../utils/format";
+import {
+  DAY_NAMES,
+  normalizeScheduleTime,
+  scheduleTimeToInputValue,
+} from "../../utils/format";
 
 interface ScheduleRowProps {
   row: ScheduleWindow;
@@ -30,15 +34,17 @@ export default function ScheduleRow({
       </select>
       <input
         type="time"
-        step="1"
-        value={row.startTime.slice(0, 5)}
-        onChange={(e) => onChange(index, "startTime", `${e.target.value}:00`)}
+        value={scheduleTimeToInputValue(row.startTime)}
+        onChange={(e) =>
+          onChange(index, "startTime", normalizeScheduleTime(e.target.value))
+        }
       />
       <input
         type="time"
-        step="1"
-        value={row.endTime.slice(0, 5)}
-        onChange={(e) => onChange(index, "endTime", `${e.target.value}:00`)}
+        value={scheduleTimeToInputValue(row.endTime)}
+        onChange={(e) =>
+          onChange(index, "endTime", normalizeScheduleTime(e.target.value))
+        }
       />
       <button
         type="button"
