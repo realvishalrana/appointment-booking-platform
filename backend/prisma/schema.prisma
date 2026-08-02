@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  patient
+  therapist
+}
+
+enum RecurrenceFrequency {
+  daily
+  weekly
+  biweekly
+  monthly
+}
+
+enum SeriesStatus {
+  active
+  cancelled
+}
+
+enum AppointmentStatus {
+  scheduled
+  completed
+  no_show
+  cancelled
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  therapistSchedules TherapistSchedule[]
+  holdsAsTherapist   SlotHold[] @relation("TherapistHolds")
+  holdsAsPatient     SlotHold[] @relation("PatientHolds")
+  patientAppointments Appointment[] @relation("PatientAppointments")
+  therapistAppointments Appointment[] @relation("TherapistAppointments")
+  patientSeries      RecurringSeries[] @relation("PatientSeries")
+  therapistSeries    RecurringSeries[] @relation("TherapistSeries")
+  idempotencyKeys    IdempotencyKey[]
+
+  @@map("users")
+}
+
+model TherapistSchedule {
+  id          Int      @id @default(autoincrement())
+  therapistId Int      @map("therapist_id")
+  dayOfWeek   Int      @map("day_of_week")
+  startTime   String   @map("start_time") @db.VarChar(8)
+  endTime     String   @map("end_time") @db.VarChar(8)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  therapist User @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@index([therapistId, dayOfWeek])
+  @@map("therapist_schedules")
+}
+
+model SlotHold {
+  id          Int      @id @default(autoincrement())
+  therapistId Int      @map("therapist_id")
+  patientId   Int      @map("patient_id")
+  startAt     DateTime @map("start_at")
+  endAt       DateTime @map("end_at")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  therapist User @relation("TherapistHolds", fields: [therapistId], references: [id], onDelete: Cascade)
+  patient   User @relation("PatientHolds", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([therapistId, startAt])
+  @@index([patientId, expiresAt])
+  @@map("slot_holds")
+}
+
+model RecurringSeries {
+  id          Int                 @id @default(autoincrement())
+  patientId   Int                 @map("patient_id")
+  therapistId Int                 @map("therapist_id")
+  frequency   RecurrenceFrequency
+  startAt     DateTime            @map("start_at")
+  endAt       DateTime            @map("end_at")
+  status      SeriesStatus        @default(active)
+  cancellationReason String?      @map("cancellation_reason") @db.VarChar(500)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  patient      User          @relation("PatientSeries", fields: [patientId], references: [id], onDelete: Cascade)
+  therapist    User          @relation("TherapistSeries", fields: [therapistId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([therapistId, status])
+  @@map("recurring_series")
+}
+
+model Appointment {
+  id          Int               @id @default(autoincrement())
+  patientId   Int               @map("patient_id")
+  therapistId Int               @map("therapist_id")
+  seriesId    Int?              @map("series_id")
+  startAt     DateTime          @map("start_at")
+  endAt       DateTime          @map("end_at")
+  status      AppointmentStatus @default(scheduled)
+  cancellationReason String?    @map("cancellation_reason") @db.VarChar(500)
+  noShowNotes        String?    @map("no_show_notes") @db.VarChar(500)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  patient   User             @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  therapist User             @relation("TherapistAppointments", fields: [therapistId], references: [id], onDelete: Cascade)
+  series    RecurringSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+
+  @@index([therapistId, startAt, status])
+  @@index([patientId, startAt])
+  @@map("appointments")
+}
+
+model IdempotencyKey {
+  id           Int      @id @default(autoincrement())
+  key          String   @unique
+  userId       Int      @map("user_id")
+  requestHash  String   @map("request_hash")
+  responseBody Json     @map("response_body")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("idempotency_keys")
+}

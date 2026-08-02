@@ -1,0 +1,12 @@
+{
+  "name": "appointment-booking",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "db:push": "cd backend && npx prisma db push",
+    "db:seed": "cd backend && npm run db:seed",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build"
+  }
+}
