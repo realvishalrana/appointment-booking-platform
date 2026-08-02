@@ -4,9 +4,8 @@ A full-stack appointment booking application where patients can hold and book sl
 
 ## Live Demo
 
-> **Deploy:** See [Deployment](#deployment) below. After deploying, add your live URLs here:
-> - Frontend: `https://your-frontend-url`
-> - Backend API: `https://your-backend-url`
+- Frontend: https://appointment-booking-platform-eight.vercel.app
+- Backend API: https://appointment-booking-platform-production.up.railway.app
 
 ## Demo Credentials
 
@@ -22,9 +21,135 @@ A full-stack appointment booking application where patients can hold and book sl
 ## Features
 
 - **Patient:** View derived slots, 1-minute holds, one-time/recurring bookings, cancel instance or series
-- **Therapist:** View appointments, update status during appointment window, edit schedule without affecting bookings
+- **Therapist:** View appointments, record outcome during session (with grace period if forgotten), edit schedule without affecting bookings
 - **Recurring:** Daily, weekly, bi-weekly, monthly (6-month horizon)
 - **Concurrency:** DB transactions, unique constraints, idempotency keys for multi-cluster safety
+
+## How it works (quick guide)
+
+All times use **`APP_TIMEZONE`** (default: `Asia/Kolkata`). Status labels in the UI are friendly; the API still uses snake_case values.
+
+### Status labels
+
+| API value (`status`) | Shown in UI        |
+|----------------------|--------------------|
+| `scheduled`          | Scheduled          |
+| `completed`          | Completed          |
+| `no_show`            | Missed Appointment |
+| `cancelled`          | Cancelled          |
+
+### Who can do what, and when
+
+#### Patient
+
+| When | Can cancel? | Notes |
+|------|-------------|-------|
+| Before appointment starts | Yes | Cancel button + reason (min 3 characters) |
+| During or after session | No | Button hidden; API returns 403 |
+
+Patients cannot mark completed, no-show, or change therapist-recorded status.
+
+#### Therapist
+
+| When | Can update status? | Options (one time only) |
+|------|--------------------|-------------------------|
+| Before `startAt` | No | UI: *"Available when the appointment starts"* |
+| During session (`startAt` → `endAt`) | Yes | Completed · Missed Appointment · Cancelled |
+| After session, within grace period | Yes | Same 3 options; UI warns *"Late update — please record status soon"* |
+| After grace period ends | No | UI: *"Update period has ended"*; appointment stays `scheduled` |
+
+**Grace period:** `STATUS_UPDATE_GRACE_HOURS` (default **24**) — hours after `endAt` the therapist may still record status once.
+
+**Rules for therapist updates:**
+- Only while status is still `scheduled` (cannot change after recording)
+- **Cancelled** requires a reason (min 3 characters)
+- **Missed Appointment** (`no_show`) allows optional notes
+
+### Example walkthrough
+
+**Scenario A — Happy path (one-time booking)**
+
+1. **Patient** logs in → selects a therapist → picks an open slot.
+2. Slot is **held for 1 minute** (countdown shown). Patient confirms booking.
+3. Appointment is created with status **`scheduled`**.
+4. At session time, **therapist** opens Appointments → clicks **Completed** → confirms.
+5. Status becomes **`completed`**. Neither side can change it again.
+
+**Scenario B — Patient cancels before the session**
+
+1. Patient has a future `scheduled` appointment.
+2. Patient clicks **Cancel** → enters reason → confirms.
+3. Status becomes **`cancelled`**; reason appears in the Notes column for both dashboards.
+
+**Scenario C — Therapist marks no-show**
+
+1. Patient does not join during the session window.
+2. Therapist clicks **Missed Appointment** → optionally adds notes → confirms.
+3. Status becomes **`no_show`**; notes visible to patient and therapist.
+
+**Scenario D — Therapist forgot to update during the session**
+
+1. Session ends at 3:00 PM; therapist forgets to record status.
+2. Until **3:00 PM the next day** (24h grace), therapist still sees action buttons with a late-update warning.
+3. Therapist records **Completed** (or Missed / Cancelled). After that, status is final.
+
+**Scenario E — Recurring series**
+
+1. Patient books **weekly** recurring appointments (materialised 6 months ahead).
+2. Patient can **cancel one instance** (single appointment) or **cancel the whole series** (future instances stop).
+
+### Flow diagram
+
+```mermaid
+stateDiagram-v2
+  [*] --> scheduled: Patient confirms booking
+  scheduled --> completed: Therapist marks completed
+  scheduled --> no_show: Therapist marks missed
+  scheduled --> cancelled: Patient cancels before start\nor Therapist cancels with reason
+  completed --> [*]
+  no_show --> [*]
+  cancelled --> [*]
+```
+
+### API examples (status updates)
+
+**Patient cancel** (only before `startAt`):
+
+```http
+DELETE /api/bookings/42
+Content-Type: application/json
+
+{ "reason": "Schedule conflict" }
+```
+
+**Therapist update** (during session or within grace period):
+
+```http
+PATCH /api/therapist/appointments/42/status
+Content-Type: application/json
+
+{ "status": "completed" }
+```
+
+```http
+PATCH /api/therapist/appointments/42/status
+Content-Type: application/json
+
+{
+  "status": "cancelled",
+  "cancellationReason": "Therapist unavailable — rescheduling"
+}
+```
+
+```http
+PATCH /api/therapist/appointments/42/status
+Content-Type: application/json
+
+{
+  "status": "no_show",
+  "noShowNotes": "Patient did not join the call"
+}
+```
 
 ## Tech Stack
 
@@ -128,15 +253,30 @@ App: http://localhost:5173
 ### Backend (e.g. Render / Railway)
 
 1. Provision MySQL (Railway, PlanetScale, or Render MySQL)
-2. Set env: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL`, `PORT`
+2. Set env:
+   - `DATABASE_URL` — MySQL connection string
+   - `JWT_SECRET` — long random string
+   - `FRONTEND_URL` — frontend origin (CORS)
+   - `APP_TIMEZONE` — e.g. `Asia/Kolkata` (slot times + display)
+   - `STATUS_UPDATE_GRACE_HOURS` — optional, default `24`
+   - `PORT` — usually set by host
 3. Build: `npm run build && npx prisma db push && npm run db:seed`
 4. Start: `npm start`
 
 ### Frontend (e.g. Vercel / Netlify)
 
-1. Set `VITE_API_URL` to backend URL
-2. Build: `npm run build`
-3. Deploy `dist/`
+1. Set `VITE_API_URL` to backend URL (no trailing slash)
+2. Optional: `VITE_APP_TIMEZONE` — match backend `APP_TIMEZONE`
+3. Build: `npm run build`
+4. Deploy `dist/` (include `vercel.json` for SPA routing on Vercel)
+
+## Quick start (all services)
+
+```bash
+docker compose up -d
+cd backend && cp .env.example .env && npm install && npx prisma db push && npm run db:seed && npm run dev
+cd frontend && npm install && npm run dev
+```
 
 ## Project Structure
 
@@ -148,7 +288,3 @@ App: http://localhost:5173
 ├── README.md
 └── AI_USAGE.md
 ```
-
-docker compose up -d
-cd backend && npm install && npx prisma db push && npm run db:seed && npm run dev
-cd frontend && npm install && npm run dev

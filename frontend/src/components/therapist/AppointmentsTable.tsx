@@ -1,12 +1,33 @@
 import StatusNotes from "../common/StatusNotes";
 import { Appointment, AppointmentStatus } from "../../types";
-import { formatDateTime } from "../../utils/format";
+import { formatAppointmentStatus, formatDateTime } from "../../utils/format";
 
-const STATUS_OPTIONS: AppointmentStatus[] = [
+const STATUS_ACTIONS: AppointmentStatus[] = [
   "completed",
   "no_show",
   "cancelled",
 ];
+
+function therapistActionHint(appointment: Appointment): string {
+  if (appointment.status !== "scheduled") {
+    return "Status recorded";
+  }
+
+  const now = Date.now();
+  const start = new Date(appointment.startAt).getTime();
+  const end = new Date(appointment.endAt).getTime();
+
+  if (appointment.canUpdateStatus) {
+    if (now > end) {
+      return "Late update — please record status soon";
+    }
+    return "";
+  }
+  if (now < start) {
+    return "Available when the appointment starts";
+  }
+  return "Update period has ended";
+}
 
 interface TherapistAppointmentsTableProps {
   appointments: Appointment[];
@@ -34,48 +55,63 @@ export default function TherapistAppointmentsTable({
         </tr>
       </thead>
       <tbody>
-        {appointments.map((a) => (
-          <tr key={a.id}>
-            <td>{formatDateTime(a.startAt)}</td>
-            <td>{a.patient?.name}</td>
-            <td>
-              {a.series ? `Recurring (${a.series.frequency})` : "One-time"}
-            </td>
-            <td>
-              <span className={`badge badge-${a.status}`}>{a.status}</span>
-            </td>
-            <td>
-              {a.status === "cancelled" || a.status === "no_show" ? (
-                <StatusNotes appointment={a} />
-              ) : (
-                <span className="status-notes-empty">—</span>
-              )}
-            </td>
-            <td>
-              {a.canUpdateStatus && a.status === "scheduled" ? (
-                <div className="status-btns">
-                  {STATUS_OPTIONS.map((s) => (
-                    <button
-                      key={s}
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => onStatusUpdate(a, s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              ) : a.canUpdateStatus ? (
-                <span style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-                  Status recorded
+        {appointments.map((a) => {
+          const hint = therapistActionHint(a);
+          const showActions =
+            a.canUpdateStatus && a.status === "scheduled";
+
+          return (
+            <tr key={a.id}>
+              <td>{formatDateTime(a.startAt)}</td>
+              <td>{a.patient?.name}</td>
+              <td>
+                {a.series ? `Recurring (${a.series.frequency})` : "One-time"}
+              </td>
+              <td>
+                <span className={`badge badge-${a.status}`}>
+                  {formatAppointmentStatus(a.status)}
                 </span>
-              ) : (
-                <span style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
-                  Status editable during appointment window
-                </span>
-              )}
-            </td>
-          </tr>
-        ))}
+              </td>
+              <td>
+                {a.status === "cancelled" || a.status === "no_show" ? (
+                  <StatusNotes appointment={a} />
+                ) : (
+                  <span className="status-notes-empty">—</span>
+                )}
+              </td>
+              <td>
+                {showActions ? (
+                  <div className="status-btns">
+                    {hint ? (
+                      <p
+                        style={{
+                          fontSize: "0.85rem",
+                          color: "#d97706",
+                          marginBottom: "0.35rem",
+                        }}
+                      >
+                        {hint}
+                      </p>
+                    ) : null}
+                    {STATUS_ACTIONS.map((s) => (
+                      <button
+                        key={s}
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => onStatusUpdate(a, s)}
+                      >
+                        {formatAppointmentStatus(s)}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ fontSize: "0.85rem", color: "#9ca3af" }}>
+                    {hint}
+                  </span>
+                )}
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

@@ -206,6 +206,14 @@ export const bookingService = {
       throw new BookingError("Only scheduled appointments can be cancelled");
     }
 
+    const now = new Date();
+    if (appointment.startAt <= now) {
+      throw new BookingError(
+        "Cannot cancel an appointment that has already started",
+        403
+      );
+    }
+
     return appointmentRepository.cancelWithReason(appointmentId, reason);
   },
 

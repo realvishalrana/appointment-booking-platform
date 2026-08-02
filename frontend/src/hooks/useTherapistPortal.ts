@@ -6,7 +6,7 @@ import {
   findDuplicateRowIndices,
   validateScheduleWindows,
 } from "../utils/scheduleValidation";
-import { normalizeScheduleTime } from "../utils/format";
+import { normalizeScheduleTime, formatAppointmentStatus } from "../utils/format";
 
 type Tab = "appointments" | "schedule";
 
@@ -74,7 +74,7 @@ export function useTherapistPortal() {
     const { appointment, status } = statusUpdateTarget;
     try {
       await api.updateAppointmentStatus(appointment.id, status, payload);
-      toast.success(`Status updated to ${status}`);
+      toast.success(`Status updated to ${formatAppointmentStatus(status)}`);
       await loadAppointments();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Update failed");

@@ -10,4 +10,9 @@ export const config = {
   timezone: process.env.APP_TIMEZONE || "Asia/Kolkata",
   holdDurationMs: 60_000,
   recurringHorizonMonths: 6,
+  /** Hours after appointment end when therapist may still record status once */
+  statusUpdateGraceHours: parseInt(
+    process.env.STATUS_UPDATE_GRACE_HOURS || "24",
+    10
+  ),
 };

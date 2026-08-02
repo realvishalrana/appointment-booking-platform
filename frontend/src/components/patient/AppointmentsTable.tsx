@@ -1,6 +1,6 @@
 import StatusNotes from "../common/StatusNotes";
 import { Appointment } from "../../types";
-import { formatDateTime } from "../../utils/format";
+import { formatDateTime, formatAppointmentStatus } from "../../utils/format";
 
 interface AppointmentsTableProps {
   appointments: Appointment[];
@@ -36,7 +36,9 @@ export default function PatientAppointmentsTable({
               {a.series ? `Recurring (${a.series.frequency})` : "One-time"}
             </td>
             <td>
-              <span className={`badge badge-${a.status}`}>{a.status}</span>
+              <span className={`badge badge-${a.status}`}>
+                {formatAppointmentStatus(a.status)}
+              </span>
             </td>
             <td>
               {a.status === "cancelled" || a.status === "no_show" ? (
@@ -46,13 +48,15 @@ export default function PatientAppointmentsTable({
               )}
             </td>
             <td>
-              {a.status === "scheduled" && (
+              {a.status === "scheduled" && new Date(a.startAt) > new Date() ? (
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={() => onCancel(a.id)}
                 >
                   Cancel
                 </button>
+              ) : (
+                <span className="status-notes-empty">—</span>
               )}
             </td>
           </tr>

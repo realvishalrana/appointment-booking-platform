@@ -1,5 +1,5 @@
 import { RecurringSeries } from "../../types";
-import { formatDateTime } from "../../utils/format";
+import { formatDateTime, formatPatientSeriesStatus } from "../../utils/format";
 
 interface SeriesTableProps {
   series: RecurringSeries[];
@@ -34,7 +34,7 @@ export default function SeriesTable({ series, onCancel }: SeriesTableProps) {
               <span
                 className={`badge badge-${s.status === "active" ? "scheduled" : "cancelled"}`}
               >
-                {s.status}
+                {formatPatientSeriesStatus(s.status)}
               </span>
             </td>
             <td>

@@ -3,7 +3,8 @@ import { TherapistError } from "../errors/AppError";
 import { appointmentRepository } from "../repositories/appointment.repository";
 import { scheduleRepository, ScheduleWindowInput } from "../repositories/schedule.repository";
 import { validateScheduleWindows } from "../utils/scheduleValidation";
-import { isWithinWindow } from "../utils/time";
+import { config } from "../config";
+import { canUpdateAppointmentStatus } from "../utils/time";
 
 export const therapistPortalService = {
   getAppointments(therapistId: number) {
@@ -23,9 +24,10 @@ export const therapistPortalService = {
     }
 
     const now = new Date();
-    if (!isWithinWindow(now, appointment.startAt, appointment.endAt)) {
+    const graceMs = config.statusUpdateGraceHours * 60 * 60 * 1000;
+    if (!canUpdateAppointmentStatus(now, appointment.startAt, appointment.endAt, graceMs)) {
       throw new TherapistError(
-        "Status can only be updated during the appointment window",
+        "Status can only be updated during the appointment or within the grace period afterward",
         403
       );
     }

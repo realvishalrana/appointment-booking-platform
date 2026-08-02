@@ -1,3 +1,23 @@
+import { AppointmentStatus } from "../types";
+
+const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  scheduled: "Scheduled",
+  completed: "Completed",
+  no_show: "Missed Appointment",
+  cancelled: "Cancelled",
+};
+
+/** User-facing appointment status label (patient + therapist dashboards) */
+export function formatAppointmentStatus(status: AppointmentStatus): string {
+  return APPOINTMENT_STATUS_LABELS[status];
+}
+
+export function formatPatientSeriesStatus(status: string): string {
+  if (status === "active") return "Active";
+  if (status === "cancelled") return "Cancelled";
+  return status;
+}
+
 export const DAY_NAMES = [
   "Sunday",
   "Monday",

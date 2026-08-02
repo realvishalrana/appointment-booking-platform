@@ -14,10 +14,10 @@ interface StatusUpdateModalProps {
 }
 
 const STATUS_LABELS: Record<AppointmentStatus, string> = {
-  scheduled: "Mark as scheduled",
-  completed: "Mark as completed",
-  no_show: "Mark as no-show",
-  cancelled: "Cancel appointment",
+  scheduled: "Mark as Scheduled",
+  completed: "Mark as Completed",
+  no_show: "Mark as Missed Appointment",
+  cancelled: "Cancel Appointment",
 };
 
 export default function StatusUpdateModal({

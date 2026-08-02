@@ -4,7 +4,8 @@ import { asyncHandler } from "../middleware/errorHandler";
 import { slotService } from "../services/slot.service";
 import { therapistPortalService } from "../services/therapist-portal.service";
 import { therapistService } from "../services/therapist.service";
-import { isWithinWindow, parseDateInTz } from "../utils/time";
+import { config } from "../config";
+import { parseDateInTz, canUpdateAppointmentStatus } from "../utils/time";
 import { serializeAppointment } from "../utils/serialize";
 
 export const therapistController = {
@@ -34,10 +35,16 @@ export const therapistPortalController = {
       req.user!.id
     );
     const now = new Date();
+    const graceMs = config.statusUpdateGraceHours * 60 * 60 * 1000;
     res.json({
       appointments: appointments.map((a) => ({
         ...serializeAppointment(a),
-        canUpdateStatus: isWithinWindow(now, a.startAt, a.endAt),
+        canUpdateStatus: canUpdateAppointmentStatus(
+          now,
+          a.startAt,
+          a.endAt,
+          graceMs
+        ),
       })),
     });
   }),
