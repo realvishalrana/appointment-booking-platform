@@ -267,6 +267,28 @@ th {
   max-width: 400px;
 }
 
+.not-found-page {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.not-found-card {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.not-found-code {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #4f46e5;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+}
+
 .status-btns {
   display: flex;
   gap: 0.35rem;

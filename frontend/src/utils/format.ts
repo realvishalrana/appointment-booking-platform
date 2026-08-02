@@ -8,9 +8,13 @@ export const DAY_NAMES = [
   "Saturday",
 ];
 
+const APP_TIMEZONE =
+  import.meta.env.VITE_APP_TIMEZONE || "Asia/Kolkata";
+
 export function formatDateTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString("en-IN", {
+    timeZone: APP_TIMEZONE,
     weekday: "short",
     year: "numeric",
     month: "short",
@@ -35,6 +39,15 @@ export function scheduleTimeToInputValue(time: string): string {
   const parts = time.split(":");
   if (parts.length < 2) return "00:00";
   return `${parts[0]}:${parts[1]}`;
+}
+
+export function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-IN", {
+    timeZone: APP_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 export function getDateRange(days: number): { from: string; to: string } {

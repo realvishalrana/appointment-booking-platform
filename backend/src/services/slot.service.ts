@@ -5,11 +5,11 @@ import { scheduleRepository } from "../repositories/schedule.repository";
 import { seriesRepository } from "../repositories/series.repository";
 import { projectSeriesOccurrences } from "../utils/recurring";
 import {
-  addDays,
-  combineDateAndTime,
-  getDayOfWeek,
+  addDaysToDateKey,
+  combineDateKeyAndTime,
+  getDateKeyInAppTz,
+  getDayOfWeekFromDateKey,
   rangesOverlap,
-  startOfDayUtc,
 } from "../utils/time";
 
 export interface AvailableSlot {
@@ -54,16 +54,16 @@ export const slotService = {
     }
 
     const slots: AvailableSlot[] = [];
-    let current = startOfDayUtc(from);
-    const end = startOfDayUtc(to);
+    let currentKey = getDateKeyInAppTz(from);
+    const endKey = getDateKeyInAppTz(to);
 
-    while (current <= end) {
-      const dow = getDayOfWeek(current);
+    while (currentKey <= endKey) {
+      const dow = getDayOfWeekFromDateKey(currentKey);
       const daySchedules = schedules.filter((s) => s.dayOfWeek === dow);
 
       for (const sched of daySchedules) {
-        const startAt = combineDateAndTime(current, sched.startTime);
-        const endAt = combineDateAndTime(current, sched.endTime);
+        const startAt = combineDateKeyAndTime(currentKey, sched.startTime);
+        const endAt = combineDateKeyAndTime(currentKey, sched.endTime);
 
         if (startAt < from || startAt > to) continue;
         if (startAt <= new Date()) continue;
@@ -81,7 +81,7 @@ export const slotService = {
         }
       }
 
-      current = addDays(current, 1);
+      currentKey = addDaysToDateKey(currentKey, 1);
     }
 
     return slots.sort(

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import PatientDashboard from "./pages/PatientDashboard";
 import TherapistDashboard from "./pages/TherapistDashboard";
 
@@ -81,8 +82,15 @@ export default function App() {
     return <div className="loading">Loading...</div>;
   }
 
+  const defaultHome = user
+    ? user.role === "therapist"
+      ? "/therapist"
+      : "/patient"
+    : "/login";
+
   return (
     <Routes>
+      <Route path="/" element={<Navigate to={defaultHome} replace />} />
       <Route
         path="/login"
         element={
@@ -114,16 +122,13 @@ export default function App() {
       <Route
         path="*"
         element={
-          <Navigate
-            to={
-              user
-                ? user.role === "therapist"
-                  ? "/therapist"
-                  : "/patient"
-                : "/login"
-            }
-            replace
-          />
+          user ? (
+            <Layout>
+              <NotFoundPage />
+            </Layout>
+          ) : (
+            <NotFoundPage />
+          )
         }
       />
     </Routes>

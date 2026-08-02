@@ -1,5 +1,5 @@
 import { Slot, Hold } from "../../types";
-import { formatDateTime } from "../../utils/format";
+import { formatDateTime, formatTime } from "../../utils/format";
 
 interface SlotGridProps {
   slots: Slot[];
@@ -33,12 +33,7 @@ export default function SlotGrid({
           >
             <div style={{ fontWeight: 600 }}>{formatDateTime(slot.startAt)}</div>
             <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-              to{" "}
-              {new Date(slot.endAt).toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: false,
-              })}
+              to {formatTime(slot.endAt)}
             </div>
           </button>
         );
